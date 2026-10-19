@@ -1,0 +1,619 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisis Data Penjualan UMKM</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            color: white;
+            padding: 30px 6%;
+        }
+
+        header h1 {
+            margin-bottom: 10px;
+        }
+
+        header p {
+            line-height: 1.6;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: auto;
+            padding: 25px 20px;
+        }
+
+        .panel, .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #0000000d;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .upload-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        input[type="file"] {
+            max-width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+        }
+
+        button {
+            padding: 11px 16px;
+            border: none;
+            border-radius: 7px;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        #status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 7px;
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 14px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            margin-bottom: 0;
+        }
+
+        .card p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .card h3 {
+            margin-top: 12px;
+            color: #1d4ed8;
+            font-size: 23px;
+            overflow-wrap: anywhere;
+        }
+
+        .charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 300px;
+            display: block;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        #kesimpulan {
+            line-height: 1.8;
+            color: #475569;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        @media (max-width: 800px) {
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .charts {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 450px) {
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Analisis Data Penjualan UMKM</h1>
+    <p>
+        Dashboard untuk menganalisis penjualan, mengetahui produk terlaris,
+        dan membantu pengambilan keputusan bisnis berdasarkan data.
+    </p>
+</header>
+
+<main>
+
+    <section class="panel">
+        <h2>Unggah Dataset</h2>
+        <p>
+            Pilih file data_penjualan.csv yang sudah kamu buat di Google Colab.
+        </p>
+
+        <br>
+
+        <div class="upload-area">
+            <input type="file" id="fileCSV" accept=".csv">
+            <button onclick="gunakanContoh()">Gunakan Data Contoh</button>
+        </div>
+
+        <div id="status">
+            Data contoh sedang ditampilkan.
+        </div>
+    </section>
+
+    <section class="cards">
+        <div class="card">
+            <p>Total Pendapatan</p>
+            <h3 id="pendapatan">Rp0</h3>
+        </div>
+
+        <div class="card">
+            <p>Total Unit Terjual</p>
+            <h3 id="unit">0</h3>
+        </div>
+
+        <div class="card">
+            <p>Produk Terlaris</p>
+            <h3 id="terlaris">-</h3>
+        </div>
+
+        <div class="card">
+            <p>Jumlah Transaksi</p>
+            <h3 id="transaksi">0</h3>
+        </div>
+    </section>
+
+    <section class="charts">
+        <div class="panel">
+            <h2>Grafik Jumlah Penjualan</h2>
+            <canvas id="grafikJumlah"></canvas>
+        </div>
+
+        <div class="panel">
+            <h2>Grafik Pendapatan Produk</h2>
+            <canvas id="grafikPendapatan"></canvas>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Ringkasan Penjualan per Produk</h2>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produk</th>
+                        <th>Jumlah Terjual</th>
+                        <th>Total Pendapatan</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tabelRingkasan"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Data Transaksi</h2>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Produk</th>
+                        <th>Jumlah</th>
+                        <th>Harga</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tabelData"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Kesimpulan Analisis</h2>
+        <p id="kesimpulan">
+            Kesimpulan akan muncul setelah data dianalisis.
+        </p>
+    </section>
+
+</main>
+
+<footer>
+    Project Analisis Data Penjualan UMKM |
+    HTML, CSS, dan JavaScript
+</footer>
+
+<script>
+const dataContoh = [
+    {Tanggal:"2026-09-01", Produk:"Beras", Jumlah:5, Harga:15000},
+    {Tanggal:"2026-09-01", Produk:"Minyak Goreng", Jumlah:3, Harga:18000},
+    {Tanggal:"2026-09-01", Produk:"Mi Instan", Jumlah:10, Harga:3500},
+    {Tanggal:"2026-09-02", Produk:"Beras", Jumlah:8, Harga:15000},
+    {Tanggal:"2026-09-02", Produk:"Gula", Jumlah:4, Harga:17000},
+    {Tanggal:"2026-09-02", Produk:"Mi Instan", Jumlah:15, Harga:3500},
+    {Tanggal:"2026-09-03", Produk:"Minyak Goreng", Jumlah:6, Harga:18000},
+    {Tanggal:"2026-09-03", Produk:"Gula", Jumlah:7, Harga:17000},
+    {Tanggal:"2026-09-03", Produk:"Beras", Jumlah:4, Harga:15000},
+    {Tanggal:"2026-09-04", Produk:"Mi Instan", Jumlah:20, Harga:3500},
+    {Tanggal:"2026-09-04", Produk:"Minyak Goreng", Jumlah:5, Harga:18000},
+    {Tanggal:"2026-09-04", Produk:"Gula", Jumlah:6, Harga:17000}
+];
+
+let dataAktif = [];
+
+function rupiah(nilai) {
+    return "Rp" + Math.round(nilai).toLocaleString("id-ID");
+}
+
+function angka(nilai) {
+    return Number(nilai).toLocaleString("id-ID");
+}
+
+function aman(teks) {
+    return String(teks).replace(/[&<>"']/g, karakter => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[karakter]);
+}
+
+function gunakanContoh() {
+    tampilkanData(dataContoh);
+    document.getElementById("status").textContent =
+        "Data contoh berhasil dimuat. Data ini merupakan simulasi.";
+}
+
+function bacaCSV(teks) {
+    // Membaca CSV sederhana dengan pemisah koma atau titik koma.
+    const baris = teks.replace(/^\uFEFF/, "").trim().split(/\r?\n/);
+
+    if (baris.length < 2) {
+        throw new Error("File CSV belum memiliki baris data.");
+    }
+
+    const pemisah =
+        baris[0].includes(";") && !baris[0].includes(",")
+        ? ";" : ",";
+
+    const kepala = baris[0].split(pemisah)
+        .map(k => k.trim().replace(/^"|"$/g, "").toLowerCase());
+
+    const indeks = nama => kepala.indexOf(nama);
+
+    const iTanggal = indeks("tanggal");
+    const iProduk = indeks("produk");
+    const iJumlah = indeks("jumlah");
+    const iHarga = indeks("harga");
+    const iTotal = indeks("total");
+
+    if ([iTanggal, iProduk, iJumlah, iHarga].some(i => i < 0)) {
+        throw new Error(
+            "Kolom CSV harus memiliki Tanggal, Produk, Jumlah, dan Harga."
+        );
+    }
+
+    function angkaCSV(nilai) {
+        let hasil = String(nilai ?? "").trim();
+
+        // Format angka seperti 15.000 dianggap lima belas ribu.
+        hasil = hasil.replace(/\./g, "").replace(",", ".");
+        return Number(hasil);
+    }
+
+    return baris.slice(1).map(line => {
+        const kolom = line.split(pemisah)
+            .map(v => v.trim().replace(/^"|"$/g, ""));
+
+        const jumlah = angkaCSV(kolom[iJumlah]);
+        const harga = angkaCSV(kolom[iHarga]);
+
+        if (!kolom[iProduk] ||
+            !Number.isFinite(jumlah) ||
+            !Number.isFinite(harga)) {
+            return null;
+        }
+
+        const total = iTotal >= 0
+            ? angkaCSV(kolom[iTotal])
+            : jumlah * harga;
+
+        return {
+            Tanggal: kolom[iTanggal],
+            Produk: kolom[iProduk],
+            Jumlah: jumlah,
+            Harga: harga,
+            Total: Number.isFinite(total) ? total : jumlah * harga
+        };
+    }).filter(Boolean);
+}
+
+function tampilkanData(data) {
+    dataAktif = data.map(d => ({
+        ...d,
+        Jumlah: Number(d.Jumlah),
+        Harga: Number(d.Harga),
+        Total: Number(d.Total ?? d.Jumlah * d.Harga)
+    }));
+
+    const ringkasan = {};
+
+    dataAktif.forEach(d => {
+        if (!ringkasan[d.Produk]) {
+            ringkasan[d.Produk] = {
+                Produk: d.Produk,
+                Jumlah: 0,
+                Pendapatan: 0
+            };
+        }
+
+        ringkasan[d.Produk].Jumlah += d.Jumlah;
+        ringkasan[d.Produk].Pendapatan += d.Total;
+    });
+
+    const produk = Object.values(ringkasan)
+        .sort((a, b) => b.Jumlah - a.Jumlah);
+
+    const totalPendapatan = dataAktif.reduce(
+        (total, d) => total + d.Total, 0
+    );
+
+    const totalUnit = dataAktif.reduce(
+        (total, d) => total + d.Jumlah, 0
+    );
+
+    document.getElementById("pendapatan").textContent =
+        rupiah(totalPendapatan);
+
+    document.getElementById("unit").textContent =
+        angka(totalUnit);
+
+    document.getElementById("transaksi").textContent =
+        angka(dataAktif.length);
+
+    document.getElementById("terlaris").textContent =
+        produk.length ? produk[0].Produk : "-";
+
+    document.getElementById("tabelRingkasan").innerHTML =
+        produk.map(p => `
+            <tr>
+                <td>${aman(p.Produk)}</td>
+                <td>${angka(p.Jumlah)}</td>
+                <td>${rupiah(p.Pendapatan)}</td>
+            </tr>
+        `).join("");
+
+    document.getElementById("tabelData").innerHTML =
+        dataAktif.map(d => `
+            <tr>
+                <td>${aman(d.Tanggal)}</td>
+                <td>${aman(d.Produk)}</td>
+                <td>${angka(d.Jumlah)}</td>
+                <td>${rupiah(d.Harga)}</td>
+                <td>${rupiah(d.Total)}</td>
+            </tr>
+        `).join("");
+
+    buatGrafik(
+        "grafikJumlah",
+        produk,
+        "Jumlah",
+        false
+    );
+
+    const berdasarkanPendapatan = [...produk]
+        .sort((a, b) => b.Pendapatan - a.Pendapatan);
+
+    buatGrafik(
+        "grafikPendapatan",
+        berdasarkanPendapatan,
+        "Pendapatan",
+        true
+    );
+
+    const teratasPendapatan = berdasarkanPendapatan[0];
+
+    document.getElementById("kesimpulan").textContent =
+        produk.length
+        ? `Dari ${dataAktif.length} transaksi, total pendapatan mencapai ${rupiah(totalPendapatan)} dengan ${angka(totalUnit)} unit terjual. Produk dengan jumlah penjualan tertinggi adalah ${produk[0].Produk}, sebanyak ${angka(produk[0].Jumlah)} unit. Sementara itu, produk dengan pendapatan terbesar adalah ${teratasPendapatan.Produk}, yaitu ${rupiah(teratasPendapatan.Pendapatan)}. Informasi ini dapat membantu UMKM merencanakan stok barang dan strategi penjualan.`
+        : "Tidak ada data yang dapat dianalisis.";
+}
+
+function buatGrafik(id, data, kolom, formatUang) {
+    const canvas = document.getElementById(id);
+    const lebar = Math.max(260, canvas.parentElement.clientWidth - 40);
+    const tinggi = 300;
+    const skala = window.devicePixelRatio || 1;
+
+    canvas.width = lebar * skala;
+    canvas.height = tinggi * skala;
+    canvas.style.height = tinggi + "px";
+
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(skala, 0, 0, skala, 0, 0);
+
+    const kiri = formatUang ? 65 : 40;
+    const kanan = 10;
+    const atas = 20;
+    const bawah = 65;
+    const areaLebar = lebar - kiri - kanan;
+    const areaTinggi = tinggi - atas - bawah;
+    const maksimum = Math.max(1, ...data.map(d => d[kolom]));
+
+    ctx.clearRect(0, 0, lebar, tinggi);
+    ctx.font = "11px Arial";
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.fillStyle = "#64748b";
+
+    for (let i = 0; i <= 4; i++) {
+        const y = atas + areaTinggi - areaTinggi * i / 4;
+
+        ctx.beginPath();
+        ctx.moveTo(kiri, y);
+        ctx.lineTo(lebar - kanan, y);
+        ctx.stroke();
+
+        const nilai = maksimum * i / 4;
+        const label = formatUang
+            ? Math.round(nilai / 1000) + "k"
+            : Math.round(nilai);
+
+        ctx.textAlign = "right";
+        ctx.fillText(label, kiri - 6, y + 4);
+    }
+
+    if (data.length === 0) return;
+
+    const slot = areaLebar / data.length;
+    const lebarBatang = Math.min(45, slot * 0.6);
+
+    data.forEach((d, i) => {
+        const nilai = d[kolom];
+        const tinggiBatang = nilai / maksimum * areaTinggi;
+        const x = kiri + i * slot + (slot - lebarBatang) / 2;
+        const y = atas + areaTinggi - tinggiBatang;
+
+        ctx.fillStyle = "#3b82f6";
+        ctx.fillRect(x, y, lebarBatang, tinggiBatang);
+
+        ctx.fillStyle = "#334155";
+        ctx.textAlign = "center";
+
+        ctx.fillText(
+            formatUang
+                ? Math.round(nilai / 1000) + "k"
+                : angka(nilai),
+            x + lebarBatang / 2,
+            Math.max(12, y - 5)
+        );
+
+        const kata = d.Produk.split(" ");
+
+        ctx.fillText(
+            kata[0],
+            x + lebarBatang / 2,
+            atas + areaTinggi + 18
+        );
+
+        if (kata.length > 1) {
+            ctx.fillText(
+                kata.slice(1).join(" "),
+                x + lebarBatang / 2,
+                atas + areaTinggi + 32
+            );
+        }
+    });
+}
+
+document.getElementById("fileCSV").addEventListener(
+    "change",
+    async function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+            const teks = await file.text();
+            const data = bacaCSV(teks);
+
+            if (!data.length) {
+                throw new Error("Tidak ada data yang valid.");
+            }
+
+            tampilkanData(data);
+
+            document.getElementById("status").textContent =
+                `Dataset ${file.name} berhasil dibaca (${data.length} baris).`;
+
+        } catch (error) {
+            document.getElementById("status").textContent =
+                "Gagal membaca dataset: " + error.message;
+        }
+    }
+);
+
+window.addEventListener("resize", () => {
+    if (dataAktif.length) {
+        tampilkanData(dataAktif);
+    }
+});
+
+// Dashboard otomatis menampilkan data contoh saat dibuka.
+tampilkanData(dataContoh);
+</script>
+
+</body>
+</html>
